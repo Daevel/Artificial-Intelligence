@@ -26,11 +26,10 @@ def player(board):
     x_count = sum(row.count('X') for row in board)
     o_count = sum(row.count('O') for row in board)
 
-    if x_count <= o_count:  # Controlla se il numero di 'X' è minore o uguale al numero di 'O'
-        return 'X'  # Il giocatore 'X' ha sempre il primo turno
+    if x_count <= o_count:
+        return X  
     else:
-        return 'O'
-    #raise NotImplementedError
+        return O
 
 
 def actions(board):
@@ -43,35 +42,26 @@ def actions(board):
         for j in range(3):
             if board[i][j] == EMPTY:
                 possibleActions.add((i,j))
+
     return possibleActions
-  
-    #raise NotImplementedError
 
 
 def result(board, action):
     """
     Returns the board that results from making move (i, j) on the board.
     """
-    new_board = copy.deepcopy(board)
+    i, j = action
 
-    current_player = player(new_board)
-    i,j = action
-    action = (i, j)
-    print(i)
-    print(j)
-    print(action)
-
-
-    if new_board[i][j] != EMPTY:
+    if board[i][j] != EMPTY:
         raise Exception("Invalid action")
-    
-    new_board[i][j] = current_player
 
+    new_board = [row[:] for row in board]  # Deep copy the board
+    new_board[i][j] = player(board)
 
     return new_board
 
 
-    #raise NotImplementedError
+    
 
 
 def winner(board):
@@ -79,112 +69,64 @@ def winner(board):
     Returns the winner of the game, if there is one.
     """
     
+    lines = board + list(zip(*board)) + \
+            [[board[i][i] for i in range(3)], [board[i][2 - i] for i in range(3)]]
 
-    # Check rows for winner
-    for row in board:
-        if len(set(row)) == 1 and row[0] != EMPTY:
-            return row[0]
+    for line in lines:
+        if len(set(line)) == 1 and line[0] is not EMPTY:
+            return line[0]
 
- 
-    # Check columns for winner
-    for col in range(3):
-        if board[0][col] == board[1][col] == board[2][col] != EMPTY:
-            
-            return board[0][col]
-
-    # Check diagonals for winner
-    if board[0][0] == board[1][1] == board[2][2] != EMPTY:
-        
-        return board[0][0]
-    if board[0][2] == board[1][1] == board[2][0] != EMPTY:
-       
-        return board[0][2]
-    
-
-    # No winner
     return EMPTY
-    #raise NotImplementedError
 
 
 def terminal(board):
     """
     Returns True if game is over, False otherwise.
     """
-
-    if winner(board) is not EMPTY:
-
-        return True
-    
-    for row in board:
-        for cell in row:
-            if cell == EMPTY:
-            
-                return False
-
-    
-    else:
-        return True
-    #raise NotImplementedError
+    return winner(board) is not EMPTY or all(all(cell is not EMPTY for cell in row) for row in board)
 
 
 def utility(board):
-        # Controllo righe
-        for row in board:
-            if all(cell == 'X' for cell in row):
-                return 1
-            elif all(cell == 'O' for cell in row):
-                return -1
-        # Controllo colonne
-        for col in range(3):
-            if all(board[row][col] == 'X' for row in range(3)):
-                return 1
-            elif all(board[row][col] == 'O' for row in range(3)):
-                return -1
-        # Controllo diagonali
-        if all(board[i][i] == 'X' for i in range(3)) or all(board[i][2-i] == 'X' for i in range(3)):
-            return 1
-        elif all(board[i][i] == 'O' for i in range(3)) or all(board[i][2-i] == 'O' for i in range(3)):
-            return -1
-        # Nessuno ha vinto
+    """
+    Returns the utility of the current board state.
+    """
+    winner_player = winner(board)
+    if winner_player == X:
+        return 1
+    elif winner_player == O:
+        return -1
+    else:
         return 0
-    #raise NotImplementedError
 
 
 def minimax(board):
+    """
+    Returns the optimal action for the current player on the board.
+    """
     def _minimax(board, maximizing_player):
-        score = utility(board)
-        if score != 0:
-            return score, None
-        
-        empty_spaces = [(i, j) for i in range(3) for j in range(3) if board[i][j] == EMPTY]
-        
-        if not empty_spaces:
-            return 0, None
+        if terminal(board):
+            return utility(board), None
         
         if maximizing_player:
             max_score = float('-inf')
-            best_move = EMPTY
-            for move in empty_spaces:
-                board[move[0]][move[1]] = 'X'
-                score, _ = _minimax(board, False)
+            best_move = None
+            for action in actions(board):
+                new_board = result(board, action)
+                score, _ = _minimax(new_board, False)
                 if score > max_score:
                     max_score = score
-                    best_move = move
-                board[move[0]][move[1]] = EMPTY
-                
+                    best_move = action
             return max_score, best_move
         else:
             min_score = float('inf')
-            best_move = EMPTY
-            for move in empty_spaces:
-                board[move[0]][move[1]] = 'O'
-                score, _ = _minimax(board, True)
+            best_move = None
+            for action in actions(board):
+                new_board = result(board, action)
+                score, _ = _minimax(new_board, True)
                 if score < min_score:
                     min_score = score
-                    best_move = move
-                board[move[0]][move[1]] = EMPTY
-             
+                    best_move = action
             return min_score, best_move
         
-    _, best_move = _minimax(board, True)
+    _, best_move = _minimax(board, player(board) == X)
     return best_move

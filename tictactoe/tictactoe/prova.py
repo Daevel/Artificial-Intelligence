@@ -40,8 +40,8 @@ board2 = [
 ]
 
 board3 = [
-    [X, O, EMPTY],
-    [O, X, EMPTY],
+    [X, EMPTY, EMPTY],
+    [EMPTY, O, EMPTY],
     [EMPTY, EMPTY, EMPTY]
 ]
 
